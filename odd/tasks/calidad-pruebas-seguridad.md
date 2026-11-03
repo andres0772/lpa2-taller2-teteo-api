@@ -1,7 +1,7 @@
 # Calidad, pruebas y seguridad
 
 Objetivo: demostrar que la API y el frontend funcionan con pruebas automatizadas y calidad reproducible antes de que el usuario haga push a `main`.
-Rama: `feature/calidad-pruebas-seguridad`; entrega por unidades de trabajo con commits conventionales en español; `chain_strategy=feature-branch-chain`; el push y la creación de PRs quedan en manos del usuario.
+Rama: `feature/calidad-pruebas-seguridad`; entrega por unidades de trabajo con commits conventionales en español; `chain_strategy=feature-branch-chain`; push de la rama completado; la creación de PRs queda en manos del usuario.
 Entorno de pruebas: `uv` + `pytest`, con `pytest-cov`, Ruff y Bandit; Docker no es obligatorio para esta entrega.
 
 ## Specs
@@ -56,3 +56,4 @@ Entorno de pruebas: `uv` + `pytest`, con `pytest-cov`, Ruff y Bandit; Docker no 
 - **L20** — 2026-11-03: T5 validada sin Docker. La integración real ejecutó Uvicorn y Flask como procesos Python locales, obtuvo un PDF válido de 2895 bytes mediante `/generar-pdf` y, al detener el backend, confirmó HTTP 503. La comprobación final pasó `uv lock --check`, Ruff format/lint, Bandit con 0 problemas y 6 excepciones revisadas, pre-commit, actionlint, `git diff --check` y `uv run pytest -q` con 14 pruebas correctas y 98% de cobertura; permanece una advertencia preexistente de Starlette/httpx. README, Dockerfiles y Compose quedaron byte-idénticos a `origin/main`. Conteo final authored sin `uv.lock`: 616 adiciones y 63 eliminaciones, 679 líneas. Risk: none. La guía paso a paso se entregará en el cierre; push y PRs siguen pendientes del usuario.
 - **L21** — 2026-11-03: el usuario confirmó manualmente: "todo dio okey, ha funcionado y descargo la factura, nice no vi errores". El log mostró `GET /` y `GET /facturas/v1/FAC-2025-001` con HTTP 200 y la descarga del PDF no presentó errores. Esto confirma la aceptación manual de S1, S9, S11 y S12.
 - **L22** — 2026-11-03: el usuario pidió: "listo hise un cambio den el readme de poner mi nombre y ya si podes agregarlo y haces pushhhhh es todo?" y autorizó commit y push. El cambio de autor fue revisado; también se corrigieron dos errores accidentales del bloque de clonado (`git clone` faltante y `lpa2-taller2-testeo-api` por `lpa2-taller2-teteo-api`) antes de preparar la entrega.
+- **L23** — 2026-11-03: el commit final de README y trazabilidad `9905ee1` fue publicado correctamente en `origin/feature/calidad-pruebas-seguridad`; el primer intento falló por ausencia del helper HTTPS y el reintento puntual con `gh auth git-credential` terminó con código 0. Local y remoto coinciden en `9905ee1`. La rama queda disponible para PR; no se creó ningún PR ni se modificó `main`.
