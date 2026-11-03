@@ -1,7 +1,7 @@
 import os
 from io import BytesIO
 from urllib.parse import quote
-from xml.sax.saxutils import escape
+from xml.sax.saxutils import escape  # nosec B406 # Solo escapa texto
 
 import requests
 from flask import Flask, abort, render_template, request, send_file
@@ -13,7 +13,6 @@ from reportlab.lib.units import mm
 from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer, Table, TableStyle
 from werkzeug.exceptions import HTTPException
 
-
 app = Flask(__name__)
 BACKEND_URL = os.getenv(
     "BACKEND_API_URL",
@@ -24,17 +23,13 @@ BACKEND_TIMEOUT_SECONDS = float(os.getenv("BACKEND_TIMEOUT_SECONDS", "10"))
 
 def _backend_url() -> str:
     configured_url = (
-        os.getenv("BACKEND_API_URL")
-        or os.getenv("BACKEND_URL")
-        or BACKEND_URL
+        os.getenv("BACKEND_API_URL") or os.getenv("BACKEND_URL") or BACKEND_URL
     )
     return configured_url.rstrip("/")
 
 
 def _backend_timeout() -> float:
-    return float(
-        os.getenv("BACKEND_TIMEOUT_SECONDS", str(BACKEND_TIMEOUT_SECONDS))
-    )
+    return float(os.getenv("BACKEND_TIMEOUT_SECONDS", str(BACKEND_TIMEOUT_SECONDS)))
 
 
 def _format_amount(value: object) -> str:
@@ -85,8 +80,7 @@ def _build_invoice_pdf(invoice: dict) -> BytesIO:
             styles["Title"],
         ),
         Paragraph(
-            "<b>Fecha de emisión:</b> "
-            f"{escape(str(invoice['fecha_emision']))}",
+            f"<b>Fecha de emisión:</b> {escape(str(invoice['fecha_emision']))}",
             styles["Normal"],
         ),
         Spacer(1, 4 * mm),
@@ -138,7 +132,12 @@ def _build_invoice_pdf(invoice: dict) -> BytesIO:
                 ("GRID", (0, 0), (-1, -1), 0.5, colors.grey),
                 ("VALIGN", (0, 0), (-1, -1), "TOP"),
                 ("ALIGN", (1, 1), (-1, -1), "RIGHT"),
-                ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, colors.HexColor("#f5f5f5")]),
+                (
+                    "ROWBACKGROUNDS",
+                    (0, 1),
+                    (-1, -1),
+                    [colors.white, colors.HexColor("#f5f5f5")],
+                ),
                 ("TOPPADDING", (0, 0), (-1, -1), 4),
                 ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
             ]
@@ -183,7 +182,7 @@ def index():
 def generar_pdf():
     try:
         id_factura = request.form["id_factura"]
-        response = requests.get(
+        response = requests.get(  # nosec B113 # El timeout está configurado
             f"{_backend_url()}/facturas/v1/{quote(id_factura, safe='')}",
             timeout=_backend_timeout(),
         )
@@ -211,5 +210,8 @@ def generar_pdf():
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=3000, debug=True)
-
+    app.run(
+        host="0.0.0.0",  # nosec B104 # Requerido por el contenedor
+        port=3000,
+        debug=os.getenv("FLASK_DEBUG", "0") == "1",
+    )

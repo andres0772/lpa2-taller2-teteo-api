@@ -1,16 +1,19 @@
 from __future__ import annotations
 
 import json
+import runpy
 import socket
 import threading
 import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from unittest.mock import patch
 
 import pytest
 from flask.testing import FlaskClient
 
-from frontend.app.main import app
+from frontend.app import main as frontend_main
 
+app = frontend_main.app
 
 INVOICE = {
     "numero_factura": "FAC-2025-001",
@@ -174,3 +177,24 @@ def test_generar_pdf_handles_backend_timeout(
 
     assert response.status_code == 504
     assert b"Tiempo de espera agotado" in response.data
+
+
+@pytest.mark.parametrize(
+    ("debug_value", "expected_debug"),
+    [(None, False), ("0", False), ("1", True)],
+)
+def test_debug_mode_is_opt_in(
+    monkeypatch: pytest.MonkeyPatch,
+    debug_value: str | None,
+    expected_debug: bool,
+) -> None:
+    if debug_value is None:
+        monkeypatch.delenv("FLASK_DEBUG", raising=False)
+    else:
+        monkeypatch.setenv("FLASK_DEBUG", debug_value)
+
+    with patch("flask.Flask.run") as run:
+        runpy.run_path(frontend_main.__file__, run_name="__main__")
+
+    run.assert_called_once()
+    assert run.call_args.kwargs["debug"] is expected_debug

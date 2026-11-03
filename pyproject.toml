@@ -30,6 +30,24 @@ testpaths = ["backend/tests", "frontend/tests"]
 pythonpath = ["."]
 addopts = "-ra --strict-markers --cov=backend/app --cov=frontend/app --cov-report=term-missing"
 
+[tool.ruff]
+target-version = "py312"
+line-length = 88
+src = ["."]
+fix = false
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I"]
+
+[tool.ruff.format]
+indent-style = "space"
+line-ending = "lf"
+quote-style = "double"
+
+[tool.bandit]
+# Los tests usan aserciones; su validación corresponde a pytest.
+exclude_dirs = ["backend/tests", "frontend/tests"]
+
 [tool.coverage.run]
 source = ["backend/app", "frontend/app"]
 branch = true
