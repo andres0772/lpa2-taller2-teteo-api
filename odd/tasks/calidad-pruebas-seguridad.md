@@ -25,7 +25,7 @@ Entorno de pruebas: `uv` + `pytest`, con `pytest-cov`, Ruff y Bandit; Docker no 
 - **T2** — S1, S6, S9, S11 — route: delegated (`gentle-ai-worker`) — estado: done — commit: `b5fa8f6` — Completar el flujo funcional del frontend y sus pruebas; superficie exclusiva `frontend/`.
 - **T3** — S2, S3, S4, S8, S9 — route: delegated (`gentle-ai-worker`) — estado: done — commit: `632f168` — Configurar Ruff, Bandit y pre-commit y dejar el repositorio sin hallazgos; delegación activada por Context backstop.
 - **T4** — S5, S7, S8 — route: inline — estado: done — commit: `ccc5128` — Agregar GitHub Actions con el mismo flujo reproducible ejecutable localmente.
-- **T5** — S1, S6, S10, S11, S12 — route: inline — estado: done — commit: pending — Ejecutar validación completa, integración local sin Docker y preparar la guía paso a paso; el push queda pendiente del usuario.
+- **T5** — S1, S6, S10, S11, S12 — route: inline — estado: done — commit: `6ecf6b0` — Ejecutar validación completa, integración local sin Docker y preparar la guía paso a paso; el push queda pendiente del usuario.
 
 ## Log
 
