@@ -1,0 +1,39 @@
+[project]
+name = "lpa2-taller2-teteo-api"
+version = "0.1.0"
+description = "Generador de facturas con FastAPI y Flask"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.115,<1.0",
+    "flask>=3.1,<4.0",
+    "faker>=37,<40.0",
+    "reportlab>=4.4,<5.0",
+    "requests>=2.32,<3.0",
+    "uvicorn>=0.34,<1.0",
+]
+
+[dependency-groups]
+dev = [
+    "bandit>=1.8,<2.0",
+    "httpx>=0.28,<1.0",
+    "pre-commit>=4.2,<5.0",
+    "pytest>=8.4,<10.0",
+    "pytest-cov>=6.2,<8.0",
+    "ruff>=0.12,<1.0",
+]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+testpaths = ["backend/tests", "frontend/tests"]
+pythonpath = ["."]
+addopts = "-ra --strict-markers --cov=backend/app --cov=frontend/app --cov-report=term-missing"
+
+[tool.coverage.run]
+source = ["backend/app", "frontend/app"]
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true

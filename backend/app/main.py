@@ -1,13 +1,30 @@
-from fastapi import FastAPI
-from faker import Faker
 import random
+from typing import Annotated
+
+from fastapi import FastAPI, Path
+from faker import Faker
 
 app = FastAPI(title="API de Facturas Fake", version="1.0")
 
 fake = Faker("es_ES")
 
+InvoiceNumber = Annotated[
+    str,
+    Path(
+        min_length=3,
+        max_length=50,
+        pattern=r"^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*$",
+    ),
+]
+
+
+@app.get("/")
+def health_check() -> dict[str, str]:
+    return {"status": "ok"}
+
+
 @app.get("/facturas/v1/{numero_factura}")
-def get_factura(numero_factura: str):
+def get_factura(numero_factura: InvoiceNumber):
     # Generar datos falsos para empresa y cliente
     empresa = {
         "nombre": fake.company(),
