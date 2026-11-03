@@ -4,7 +4,7 @@ Sistema completo de generación de facturas, utilizando [FastAPI](https://fastap
 
 ## Autor
 
-- Nombre del Estudiante - @perfil_de_github
+- Andres Esteban Vasques Peña - https://github.com/andres0772
 
 ## Descripción del Proyecto
 
@@ -60,8 +60,8 @@ factura-generator/
 1. **Clonar el repositorio**
 
 ```bash
-git clone https://github.com/UR-CC/lpa2-taller2.git
-cd lpa2-taller2
+git clone https://github.com/andres0772/lpa2-taller2-teteo-api.git
+cd lpa2-taller2-teteo-api
 ```
 
 2. **Construir y levantar los servicios**
