@@ -1,94 +1,87 @@
 # Generador de Facturas
 
-Sistema completo de generación de facturas, utilizando [FastAPI](https://fastapi.tiangolo.com/) para el backend que genera datos sintéticos con [Faker](https://faker.readthedocs.io/), y proporciona un frontend web con [Flask](https://flask.palletsprojects.com/) para generar PDFs de las facturas con [ReportLab](https://docs.reportlab.com/reportlab/userguide/ch1_intro/).
+Sistema de generación de facturas: un backend [FastAPI](https://fastapi.tiangolo.com/) que produce datos sintéticos con [Faker](https://faker.readthedocs.io/), y un frontend web con [Flask](https://flask.palletsprojects.com/) que consulta la API y devuelve un PDF generado con [ReportLab](https://docs.reportlab.com/reportlab/userguide/ch1_intro/).
 
 ## Autor
 
 - Andres Esteban Vasques Peña - https://github.com/andres0772
 
-## Descripción del Proyecto
+## Requisitos
 
-Este proyecto consta de dos servicios principales:
+- **Opción A (local):** Python 3.12 y [`uv`](https://docs.astral.sh/uv/). No hace falta Docker.
+- **Opción B (contenedores):** Docker con el plugin Compose v2 (`docker compose`).
 
-- **Backend API**: FastAPI que genera datos sintéticos de facturas utilizando Faker
-- **Frontend Web**: Aplicación web que consume el API y genera PDFs descargables de las facturas
+## Inicio rápido sin Docker
 
-## Arquitectura
+Es el camino recomendado para desarrollar, porque es el que cubren los tests y el pre-commit.
+
+```bash
+uv sync --locked                     # crea el entorno con uv.lock (Python 3.12)
+
+uv run uvicorn backend.app.main:app --reload --port 8000     # terminal 1: backend
+
+# terminal 2: frontend (el default http://backend:8000 solo existe dentro de Docker)
+BACKEND_API_URL=http://localhost:8000 uv run python frontend/app/main.py
+```
+
+- Backend: http://localhost:8000
+- Frontend: http://localhost:3000
+- Documentación de la API: http://localhost:8000/docs (Swagger) y http://localhost:8000/redoc
+
+Para parar los servidores: `Ctrl+C` en cada terminal.
+
+## Inicio rápido con Docker
+
+```bash
+docker compose up --build            # construye las imágenes y levanta los dos servicios
+docker compose up -d                 # igual, en segundo plano
+docker compose logs -f backend       # logs de un servicio
+docker compose down                  # detener y limpiar contenedores y red
+docker compose down -v               # además elimina volúmenes
+```
+
+Contenedores: `factura-api` (backend) y `factura-frontend` (frontend), sobre la red `factura-network`. El backend expone un healthcheck (`curl -f http://localhost:8000/`, cada 30s, 3 reintentos) y el frontend depende de que esté levantado.
+
+Puertos expuestos: frontend `3000`, backend `8000`. Para cambiarlos, editá el bloque `ports` de `docker-compose.yml` (por ejemplo `"8080:3000"` y `"9000:8000"`).
+
+## Estructura del proyecto
 
 ```
-┌────────────────┐          ┌───────────────┐
-│  Frontend Web  │ ───────> │  Backend API  │
-│  puerto 3000   │   HTTP   │  puerto 8000  │
-│  Flask + RLab  │ <─────── │  FastAPI      │
-└────────────────┘          └───────────────┘
-```
-
-## Estructura del Proyecto
-
-```
-factura-generator/
-├── docker-compose.yml          # Orquestación de servicios
-├── README.md                   # Este archivo
-├── backend/                    # Servicio API
+lpa2-taller2-teteo-api/
+├── docker-compose.yml          # orquestación de los dos servicios
+├── pyproject.toml              # dependencias, pytest, ruff y bandit
+├── uv.lock                     # dependencias fijadas
+├── .python-version             # 3.12
+├── backend/
 │   ├── Dockerfile
-│   └── app/
-│       ├── main.py            # API FastAPI
-│       └── requirements.txt
-└── frontend/                   # Servicio Frontend
+│   ├── app/
+│   │   ├── main.py            # API FastAPI
+│   │   └── requirements.txt   # deps de la imagen Docker
+│   └── tests/test_main.py
+└── frontend/
     ├── Dockerfile
-    └── app/
-        ├── main.py            # Servidor web Flask
-        ├── requirements.txt
-        ├── static/            # Archivos estáticos
-        │   ├── css/
-        │   │    └── style.css
-        │   └── js/
-        │        └── app.js
-        └── templates/         # Plantillas HTML
-            └── index.html
+    ├── app/
+    │   ├── main.py            # servidor Flask + generación del PDF
+    │   ├── requirements.txt
+    │   ├── static/css/style.css
+    │   ├── static/js/app.js
+    │   └── templates/index.html
+    └── tests/test_main.py
 ```
 
-## Inicio Rápido
+Además: `.github/workflows/ci.yml` (integración continua) y `.pre-commit-config.yaml` (hooks locales).
 
-### Prerrequisitos
+## Backend (API de facturas)
 
-- Docker
-- Docker Compose
+`GET /` — health check, devuelve `{"status": "ok"}`.
 
-### Instalación y Ejecución
-
-1. **Clonar el repositorio**
-
-```bash
-git clone https://github.com/andres0772/lpa2-taller2-teteo-api.git
-cd lpa2-taller2-teteo-api
-```
-
-2. **Construir y levantar los servicios**
-
-```bash
-docker-compose up --build
-```
-
-3. **Acceder a la aplicación**
-
-- Frontend: `http://localhost:3000`
-- Backend API: `http://localhost:8000`
-- Documentación API: `http://localhost:8000/docs`
-
-## Backend (API de Facturas)
-
-El backend expone un *endpoint* que genera facturas sintéticas:
-
-**Endpoint:** `GET /facturas/v1/{numero_factura}`
-
-**Ejemplo de uso:**
+`GET /facturas/v1/{numero_factura}` — genera una factura sintética:
 
 ```bash
 curl http://localhost:8000/facturas/v1/FAC-2025-001
 ```
 
-**Ejemplo de la Respuesta:**
+El número de factura debe tener entre 3 y 50 caracteres y respetar el patrón `^[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*$` (letras y números, separados por guiones).Cualquier otro valor responde `422`.
 
 ```json
 {
@@ -105,118 +98,72 @@ curl http://localhost:8000/facturas/v1/FAC-2025-001
     "direccion": "Av. Libertad 456, Barcelona",
     "telefono": "+34 933 456 789"
   },
-  "detalle": [...],
+  "detalle": [
+    {
+      "descripcion": "Servicio de consultoría",
+      "cantidad": 2,
+      "precio_unitario": 625.00,
+      "total": 1250.00
+    }
+  ],
   "subtotal": 1250.00,
   "impuesto": 262.50,
   "total": 1512.50
 }
 ```
 
-## Frontend (Generador de PDF)
+`impuesto` es el 21% del `subtotal` y `detalle` trae entre 1 y 5 líneas. Los datos son aleatorios (Faker con locale `es_ES`), así que cambian en cada llamada salvo el número de factura.
 
-El frontend proporciona una interfaz web donde:
+## Frontend (generador del PDF)
 
-1. El usuario ingresa un número de factura
-2. Se consulta el API backend
-3. Se genera un PDF profesional con los datos
-4. El usuario puede descargar o imprimir el PDF
+- `GET /` muestra el formulario (`templates/index.html`).
+- `POST /generar-pdf` recibe el campo `id_factura`, consulta al backend y devuelve el PDF como descarga adjunta llamada `factura_<numero>.pdf`.
 
-### Tecnologías del Frontend
+Uso: abrí http://localhost:3000, escribí un número de factura, hacé clic en **Generar PDF** y guardá el archivo. No hay vista previa: el clic ya devuelve el PDF.
 
-- **Flask**: Servidor web
-- **Jinja2**: Motor de plantillas
-- **HTML/CSS/JavaScript**: Interfaz de usuario
+Errores que puede devolver el frontend:
 
-### Modificar el Frontend
+| Situación | Respuesta |
+| --- | --- |
+| El backend responde distinto de 200 | `404 Factura no encontrada` |
+| El backend tarda más del timeout | `504 Tiempo de espera agotado` |
+| El backend no responde | `503 Error de conexión con el servidor` |
+| Error inesperado | `500` |
 
-- Editar `frontend/app/main.py` para crear la lógica de la consulta del API y generación del PDF
-- Editar `frontend/app/templates/index.html` para modificar el diseño de la interfaz Web
-- Editar `frontend/app/static/css/style.css` para modificar los estilos 
-- Editar `frontend/app/static/js/app.js` para ajustar lógica de la interfaz, si se requiere
+### Variables de entorno
 
-## Configuración Avanzada
+Todas se leen en `frontend/app/main.py`:
 
-### Variables de Entorno
+| Variable | Default | Para qué |
+| --- | --- | --- |
+| `BACKEND_API_URL` | `http://backend:8000` | URL del backend; `BACKEND_URL` es un alias aceptado |
+| `BACKEND_TIMEOUT_SECONDS` | `10` | timeout de la consulta al backend |
+| `FLASK_DEBUG` | `0` | `1` activa el debugger de Flask (solo en desarrollo) |
 
-Puedes modificar el `docker-compose.yml` para añadir variables de entorno:
+En local usá siempre `BACKEND_API_URL=http://localhost:8000`; dentro de Docker Compose ya está configurado como `http://backend:8000`.
 
-```yaml
-environment:
-  - API_URL=http://backend:8000
-  - DEBUG=true
-```
-
-### Puertos Personalizados
-
-Modificar en `docker-compose.yml`:
-
-```yaml
-ports:
-  - "8080:3000"  # Frontend en puerto 8080
-  - "9000:8000"  # Backend en puerto 9000
-```
-
-## Uso de la Aplicación
-
-1. **Abrir el navegador** en `http://localhost:3000`
-2. **Ingresar número de factura** (ej: FAC-2025-001, INV-2024-123, etc.)
-3. **Hacer clic en "Generar Factura"**
-4. **Ver la vista previa** de la factura
-5. **Descargar PDF** haciendo clic en "Descargar PDF"
-
-## Comandos Docker Útiles
+## Testing y calidad
 
 ```bash
-# Levantar servicios
-docker-compose up
-
-# Levantar servicios en segundo plano
-docker-compose up -d
-
-# Reconstruir imágenes
-docker-compose up --build
-
-# Ver logs
-docker-compose logs -f
-
-# Ver logs de un servicio específico
-docker-compose logs -f backend
-docker-compose logs -f frontend
-
-# Detener servicios
-docker-compose down
-
-# Detener y eliminar volúmenes
-docker-compose down -v
-
-# Reiniciar un servicio específico
-docker-compose restart backend
+uv run pytest -q                    # tests de backend y frontend, con cobertura
+uv run pytest -q --no-cov           # más rápido, sin cobertura
+uv run ruff format --check .        # formato
+uv run ruff check .                 # lint
+uv run bandit -r backend frontend -c pyproject.toml   # seguridad
+uv run pre-commit run --all-files   # todo lo anterior de una vez
 ```
 
-## 🧪 Testing
+La CI (`.github/workflows/ci.yml`) corre esos mismos checks más un smoke test de Docker: construye las dos imágenes, levanta los servicios con `docker compose`, espera a que respondan y genera un PDF de verdad comprobando que es un PDF válido. Corre en cada push a `main` y en cada pull request.
 
-### Probar el Backend
+### Probar a mano el backend
 
 ```bash
-# Endpoint de salud
-curl http://localhost:8000/
-
-# Generar factura
-curl http://localhost:8000/facturas/v1/TEST-001 | jq
-
-# Usando httpie (más legible)
-http http://localhost:8000/facturas/v1/TEST-001
+curl http://localhost:8000/                          # health check
+curl http://localhost:8000/facturas/v1/TEST-001      # factura de prueba
 ```
 
-### Probar el Frontend
+### Probar a mano el frontend
 
-1. Navegar a `http://localhost:3000`
-2. Probar diferentes números de factura
-3. Verificar generación correcta de PDFs
-
-## API Documentation
-
-La documentación interactiva de Swagger está disponible en:
-- `http://localhost:8000/docs` (Swagger UI)
-- `http://localhost:8000/redoc` (ReDoc)
-
+1. Entrá a http://localhost:3000
+2. Probá varios números de factura (`FAC-2025-001`, `INV-2024-123`)
+3. Verificá que el PDF se descarga y se abre
