@@ -39,3 +39,64 @@ jobs:
 
       - name: Run tests with coverage
         run: uv run pytest -q
+
+  docker:
+    name: Docker smoke test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Build images and start services
+        run: docker compose up -d --build
+
+      - name: Wait for backend
+        run: |
+          for attempt in $(seq 1 30); do
+            if curl -fsS http://localhost:8000/; then
+              echo
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "The backend did not become healthy" >&2
+          docker compose logs
+          exit 1
+
+      - name: Wait for frontend
+        run: |
+          for attempt in $(seq 1 30); do
+            if curl -fsS -o /dev/null http://localhost:3000/; then
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "The frontend did not become healthy" >&2
+          docker compose logs
+          exit 1
+
+      - name: Check the invoice endpoint
+        run: |
+          curl -fsS http://localhost:8000/facturas/v1/FAC-2025-001 \
+            | jq -e '.numero_factura == "FAC-2025-001" and .total > 0'
+
+      - name: Generate a PDF through the frontend
+        run: |
+          curl -fsS -D /tmp/pdf-headers.txt -o /tmp/factura.pdf \
+            --data 'id_factura=FAC-2025-001' \
+            --write-out 'content_type=%{content_type} bytes=%{size_download}\n' \
+            http://localhost:3000/generar-pdf
+          grep -qi '^content-type: application/pdf' /tmp/pdf-headers.txt
+          head -c 4 /tmp/factura.pdf | grep -q '%PDF'
+          test "$(stat -c%s /tmp/factura.pdf)" -gt 1000
+          grep -qi 'filename=factura_FAC-2025-001.pdf' /tmp/pdf-headers.txt
+
+      - name: Show service logs on failure
+        if: failure()
+        run: docker compose logs
+
+      - name: Stop services
+        if: always()
+        run: docker compose down -v
